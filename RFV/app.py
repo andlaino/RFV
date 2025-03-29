@@ -1,4 +1,3 @@
-# Imports
 import pandas as pd
 import streamlit as st
 import numpy as np
@@ -15,11 +14,10 @@ def convert_df(df):
 @st.cache_data
 def to_excel(df):
     output = BytesIO()
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, index=False, sheet_name='Sheet1')
-    writer.close()
-    processed_data = output.getvalue()
-    return processed_data
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Sheet1')
+    output.seek(0)
+    return output
 
 ### Criando os segmentos
 def recencia_class(x, r, q_dict):
@@ -149,18 +147,14 @@ def main():
         df_RFV['acoes de marketing/crm'] = df_RFV['RFV_Score'].map(dict_acoes)
         st.write(df_RFV.head())
 
-        # Caminho para salvar o arquivo Excel na pasta desejada
-        df_RFV.to_excel('./output/RFV.xlsx', index=False)
+        # Converting DataFrame to Excel in memory
+        excel_file = to_excel(df_RFV)
 
-        # Convertendo o DataFrame para bytes (para o download)
-        with open('./output/RFV.xlsx', 'rb') as f:
-            file_data = f.read()
-
-        # Botão para download do arquivo Excel
+        # Button for download
         st.download_button(label='📥 Download',
-                   data=file_data,
-                   file_name='RFV_.xlsx',
-                   mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                           data=excel_file,
+                           file_name='RFV.xlsx',
+                           mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
         st.write('Quantidade de clientes por tipo de ação')
         st.write(df_RFV['acoes de marketing/crm'].value_counts(dropna=False))
